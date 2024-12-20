@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title> Aspect-Ratio-Controlled Binary Split Treemap </title>
+    <style>
+        .container {
+            position: relative;
+            width: 100%; /* Make container width responsive */
+            max-width: 100%; /* Optional: limit maximum width */
+            height: 600px; /* Initial height, can be adjusted dynamically */
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            overflow: hidden;
+        }
+        .item {
+            position: absolute;
+            box-sizing: border-box;
+            overflow: hidden;
+            padding: 5px;
+            border: 4px solid #fff; /* Optional: add border to rectangles */
+            word-break: break-word;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            cursor: pointer;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="container">
+    <!-- Rectangles will be dynamically generated and inserted here by JavaScript -->
+</div>
+
+<script>
+    const ideaCloud = [
+        { idea: "AI in Office Productivity", score: 347, backgroundColor: "#E5E3F3", textColor: "#2700D7" },
+        { idea: "AI Strategy and Product Roadmap", score: 307, backgroundColor: "#E5E3F3", textColor: "#2700D7" },
+        { idea: "Advancements in AI Applications", score: 264, backgroundColor: "#D1D1D1", textColor: "#212121" },
+        { idea: "Development of AI Assistants", score: 246, backgroundColor: "#FFC9C4", textColor: "#A50E00" },
+        { idea: "User Interaction with AI (LUI vs. GUI)", score: 244, backgroundColor: "#ECEDBB", textColor: "#686A06" },
+        { idea: "AI for Enterprise Efficiency", score: 205, backgroundColor: "#FFD2FD", textColor: "#894386" },
+        { idea: "AI Integration in Government Services", score: 195, backgroundColor: "#EBE0E2", textColor: "#611121" },
+        { idea: "Challenges in AI User Adoption", score: 194, backgroundColor: "#FFC9C4", textColor: "#A50E00" },
+        { idea: "Custom AI Models for Specific Tasks", score: 154, backgroundColor: "#FEE8A5", textColor: "#8B6B0B" },
+        { idea: "Building Corporate AI Ecosystems", score: 149, backgroundColor: "#FFD2FD", textColor: "#894386" },
+        { idea: "AI-Enhanced Document Management", score: 129, backgroundColor: "#ECEDBB", textColor: "#686A06" },
+        { idea: "Personalized AI in Large Enterprises", score: 109, backgroundColor: "#EBE0E2", textColor: "#611121" },
+        { idea: "Progression from AIGC to a More Integrated AI", score: 74, backgroundColor: "#EBE0E2", textColor: "#611121" },
+        { idea: "AI in Enhancing Communication and Workflows", score: 67, backgroundColor: "#FFD2FD", textColor: "#894386" },
+        { idea: "Preparing Enterprises for AI Adoption", score: 49, backgroundColor: "#FFC9C4", textColor: "#A50E00" },
+        { idea: "AI in Office Productivity", score: 347, backgroundColor: "#E5E3F3", textColor: "#2700D7" },
+        { idea: "AI Strategy and Product Roadmap", score: 307, backgroundColor: "#E5E3F3", textColor: "#2700D7" },
+        { idea: "Advancements in AI Applications", score: 264, backgroundColor: "#D1D1D1", textColor: "#212121" },
+        { idea: "Development of AI Assistants", score: 246, backgroundColor: "#FFC9C4", textColor: "#A50E00" },
+        { idea: "User Interaction with AI (LUI vs. GUI)", score: 244, backgroundColor: "#ECEDBB", textColor: "#686A06" },
+        { idea: "AI for Enterprise Efficiency", score: 205, backgroundColor: "#FFD2FD", textColor: "#894386" },
+        { idea: "AI Integration in Government Services", score: 195, backgroundColor: "#EBE0E2", textColor: "#611121" },
+        { idea: "Challenges in AI User Adoption", score: 194, backgroundColor: "#FFC9C4", textColor: "#A50E00" },
+        { idea: "Custom AI Models for Specific Tasks", score: 154, backgroundColor: "#FEE8A5", textColor: "#8B6B0B" },
+        { idea: "Building Corporate AI Ecosystems", score: 149, backgroundColor: "#FFD2FD", textColor: "#894386" },
+        { idea: "AI-Enhanced Document Management", score: 129, backgroundColor: "#ECEDBB", textColor: "#686A06" },
+        { idea: "Personalized AI in Large Enterprises", score: 109, backgroundColor: "#EBE0E2", textColor: "#611121" },
+        { idea: "Progression from AIGC to a More Integrated AI", score: 74, backgroundColor: "#EBE0E2", textColor: "#611121" },
+        { idea: "AI in Enhancing Communication and Workflows", score: 67, backgroundColor: "#FFD2FD", textColor: "#894386" },
+        { idea: "Preparing Enterprises for AI Adoption", score: 49, backgroundColor: "#FFC9C4", textColor: "#A50E00" }
+    
+    ];
+
+    // Initialize container
+    const container = document.getElementById('container');
+
+    function drawTreemap() {
+        // Clear container content
+        container.innerHTML = '';
+
+        // Get current container width
+        const containerWidth = container.clientWidth;
+
+        // Calculate total score
+        const totalScore = ideaCloud.reduce((sum, item) => sum + item.score, 0);
+
+        // Shuffle algorithm to randomly reorder data
+        const data = ideaCloud.slice();
+        for (let i = data.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [data[i], data[j]] = [data[j], data[i]];
+        }
+
+        // Area size represented by each score, can be adjusted as needed
+        const areaPerScore = 150; // For example, each score represents 150 square pixels
+
+        // Calculate total area requirement
+        const totalArea = totalScore * areaPerScore;
+
+        // Determine height based on total area and width
+        let containerHeight = Math.ceil(totalArea / containerWidth); 
+
+
+        // Define treemap function
+        function generateTreemap(data, x, y, width, height) {
+            if (data.length === 0) return [];
+
+            if (data.length === 1) {
+                // Only one element, return directly
+                return [{
+                    x: x,
+                    y: y,
+                    width: width,
+                    height: height,
+                    item: data[0]
+                }];
+            }
+
+            // Calculate the total score
+            const total = data.reduce((sum, item) => sum + item.score, 0);
+
+            // Improved split direction selection, limiting aspect ratio
+            const aspectRatio = width / height;
+            let splitHorizontal;
+            if (aspectRatio > 1.3) {
+                // Region too wide, choose vertical split
+                splitHorizontal = false;
+            } else if (aspectRatio < 0.85) {
+                // Region too tall, choose horizontal split
+                splitHorizontal = true;
+            } else {
+                // Otherwise choose randomly
+                splitHorizontal = Math.random() > 0.5;
+            }
+
+            // Randomly select the split point
+            let sum = 0;
+            let mid = 0;
+            const randomThreshold = total * Math.random();
+            for (let i = 0; i < data.length; i++) {
+                sum += data[i].score;
+                if (sum >= randomThreshold) {
+                    mid = i + 1;
+                    break;
+                }
+            }
+            if (mid === 0 || mid >= data.length) mid = Math.floor(data.length / 2);
+
+            const group1 = data.slice(0, mid);
+            const group2 = data.slice(mid);
+
+            const score1 = group1.reduce((sum, item) => sum + item.score, 0);
+            const score2 = group2.reduce((sum, item) => sum + item.score, 0);
+
+            const rects = [];
+
+            if (splitHorizontal) {
+                const height1 = height * (score1 / total);
+                const height2 = height - height1;
+
+                rects.push(...generateTreemap(group1, x, y, width, height1));
+                rects.push(...generateTreemap(group2, x, y + height1, width, height2));
+            } else {
+                const width1 = width * (score1 / total);
+                const width2 = width - width1;
+
+                rects.push(...generateTreemap(group1, x, y, width1, height));
+                rects.push(...generateTreemap(group2, x + width1, y, width2, height));
+            }
+
+            return rects;
+        }
+
+        // Generate rectangles
+        const treemapRects = generateTreemap(data, 0, 0, containerWidth, containerHeight);
+
+        // Dynamically adjust container height (if needed)
+        const maxY = Math.max(...treemapRects.map(rect => rect.y + rect.height));
+        console.log(maxY);
+        container.style.height = maxY + 'px';
+
+        // Find the maximum and minimum rectangle areas for font size calculation
+        const areas = treemapRects.map(rect => rect.width * rect.height);
+        const maxArea = Math.max(...areas);
+        const minArea = Math.min(...areas);
+
+        // Set the font size range (unit: px)
+        const maxFontSize = 24;
+        const minFontSize = 10;
+
+        // Draw rectangles
+        treemapRects.forEach(rect => {
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.style.left = rect.x + 'px';
+            div.style.top = rect.y + 'px';
+            div.style.width = rect.width + 'px';
+            div.style.height = rect.height + 'px';
+            div.style.backgroundColor = rect.item.backgroundColor;
+            div.style.color = rect.item.textColor;
+
+            // Calculate font size
+            const area = rect.width * rect.height;
+            const fontSize = minFontSize + (area - minArea) / (maxArea - minArea) * (maxFontSize - minFontSize);
+            div.style.fontSize = fontSize + 'px';
+
+            div.innerHTML = rect.item.idea;
+
+            container.appendChild(div);
+        });
+    }
+
+    // Initial drawing
+    drawTreemap();
+
+    // Listen for window resize and redraw
+    window.addEventListener('resize', function() {
+        drawTreemap();
+    });
+
+    // Click the container to redraw and generate a different
+    container.addEventListener('click', function() {
+        drawTreemap();
+    });
+
+</script>
+
+</body>
+</html>
